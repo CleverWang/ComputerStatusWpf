@@ -71,6 +71,7 @@ namespace WpfUsage
             timer.Tick += Timer_Tick;
             timer.Start();
         }
+
         private void SetActiveInterface()
         {
             for (int i = 0; i < interfaces.Length; i++)

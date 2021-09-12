@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WpfUsage"
         mc:Ignorable="d"
-        Title="Computer Status" Height="150" Width="300" WindowStyle="SingleBorderWindow" WindowStartupLocation="CenterScreen" Icon="favicon.ico">
+        Title="Computer Status" Height="150" Width="300" WindowStyle="SingleBorderWindow" WindowStartupLocation="CenterScreen" Icon="favicon.ico" Topmost="True" ResizeMode="CanMinimize">
     <Grid ShowGridLines="False">
         <Grid.RowDefinitions>
             <RowDefinition/>
