@@ -2,17 +2,9 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Management;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using System.Windows.Threading;
 
 namespace WpfUsage
@@ -23,8 +15,8 @@ namespace WpfUsage
     public partial class MainWindow : Window
     {
         private readonly PerformanceCounter cpuCounter;
-        private readonly PerformanceCounter memCounter;
         private readonly PerformanceCounter memAvailableCounter;
+        private readonly ulong memTotal = 0;
         private readonly Dictionary<string, PerformanceCounter> netRxCounters;
         private readonly Dictionary<string, PerformanceCounter> netTxCounters;
 
@@ -42,10 +34,16 @@ namespace WpfUsage
             InitializeComponent();
 
             cpuCounter = new PerformanceCounter("Processor", "% Processor Time", "_Total");
-            memCounter = new PerformanceCounter("Memory", "% Committed Bytes In Use");
+            //memCounter = new PerformanceCounter("Memory", "% Committed Bytes In Use");
             memAvailableCounter = new PerformanceCounter("Memory", "Available Bytes");
             netRxCounters = new Dictionary<string, PerformanceCounter>();
             netTxCounters = new Dictionary<string, PerformanceCounter>();
+
+            var memMC = new ManagementClass("Win32_PhysicalMemory");
+            foreach (var memMo in memMC.GetInstances())
+            {
+                memTotal += (ulong)memMo.GetPropertyValue("Capacity");
+            }
 
             interfaces = PerformanceCounterCategory.GetCategories().Where(category => category.CategoryName == "Network Interface").FirstOrDefault()?.GetInstanceNames();
             if (interfaces != null && interfaces.Length > 0)
@@ -92,7 +90,9 @@ namespace WpfUsage
         private void Timer_Tick(object sender, EventArgs e)
         {
             CpuUsage.Content = $"{cpuCounter.NextValue():F2}%";
-            MemUsage.Content = $"{memCounter.NextValue():F2}% (Available: {memAvailableCounter.NextValue() / GB:F2}GB)";
+            //MemUsage.Content = $"{memCounter.NextValue():F2}% (Available: {memAvailableCounter.NextValue() / GB:F2}GB)";
+            var memAvailable = memAvailableCounter.NextValue();
+            MemUsage.Content = $"{(memTotal - memAvailable) / memTotal:P2} (Available: {memAvailable / GB:F2}GB)";
 
             if (interfaceIdx != -1)
             {
