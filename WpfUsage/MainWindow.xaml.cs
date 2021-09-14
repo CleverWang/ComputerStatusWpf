@@ -43,7 +43,9 @@ namespace WpfUsage
             foreach (var memMo in memMC.GetInstances())
             {
                 memTotal += (ulong)memMo.GetPropertyValue("Capacity");
+                memMo.Dispose();
             }
+            memMC.Dispose();
 
             interfaces = PerformanceCounterCategory.GetCategories().Where(category => category.CategoryName == "Network Interface").FirstOrDefault()?.GetInstanceNames();
             if (interfaces != null && interfaces.Length > 0)
