@@ -26,8 +26,8 @@
         <Label Grid.Row="2" Grid.Column="0" Content="Interface:" />
         <ComboBox Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="3" x:Name="ComBoxInterfaces" SelectionChanged="ComBoxInterfaces_SelectionChanged" HorizontalAlignment="Left" VerticalAlignment="Center" />
         <Label Grid.Row="3" Grid.Column="0" Content="RX:" />
-        <Label Grid.Row="3" Grid.Column="1" x:Name="NetRxUsage" Content="N/A" />
+        <Label Grid.Row="3" Grid.Column="1" x:Name="NetRxUsage" Content="Detecting" />
         <Label Grid.Row="3" Grid.Column="2" Content="TX:" />
-        <Label Grid.Row="3" Grid.Column="3" x:Name="NetTxUsage" Content="N/A" />
+        <Label Grid.Row="3" Grid.Column="3" x:Name="NetTxUsage" Content="Detecting" />
     </Grid>
 </Window>

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Management;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
@@ -34,18 +35,18 @@ namespace WpfUsage
             InitializeComponent();
 
             cpuCounter = new PerformanceCounter("Processor", "% Processor Time", "_Total");
-            //memCounter = new PerformanceCounter("Memory", "% Committed Bytes In Use");
             memAvailableCounter = new PerformanceCounter("Memory", "Available Bytes");
             netRxCounters = new Dictionary<string, PerformanceCounter>();
             netTxCounters = new Dictionary<string, PerformanceCounter>();
 
-            var memMC = new ManagementClass("Win32_PhysicalMemory");
-            foreach (var memMo in memMC.GetInstances())
+            using (var memMC = new ManagementClass("Win32_PhysicalMemory"))
             {
-                memTotal += (ulong)memMo.GetPropertyValue("Capacity");
-                memMo.Dispose();
+                using var memMOC = memMC.GetInstances();
+                foreach (var memMO in memMOC)
+                {
+                    memTotal += (ulong)memMO.GetPropertyValue("Capacity");
+                }
             }
-            memMC.Dispose();
 
             interfaces = PerformanceCounterCategory.GetCategories().Where(category => category.CategoryName == "Network Interface").FirstOrDefault()?.GetInstanceNames();
             if (interfaces != null && interfaces.Length > 0)
@@ -60,7 +61,7 @@ namespace WpfUsage
                     netTxCounters.Add(interfaceName, new PerformanceCounter("Network Interface", "Bytes Sent/sec", interfaceName));
                 }
 
-                SetActiveInterface();
+                _ = SetActiveInterfaceAsync();
             }
 
             timer = new DispatcherTimer
@@ -72,12 +73,25 @@ namespace WpfUsage
             timer.Start();
         }
 
-        private void SetActiveInterface()
+        private async Task SetActiveInterfaceAsync()
         {
-            for (int i = 0; i < interfaces.Length; i++)
+            async Task<bool> IsInterfaceActiveAsync(string interfaceName)
             {
-                // simple check: not good enough
-                if (netRxCounters[interfaces[i]].NextValue() > 0)
+                var rxcounter = netRxCounters[interfaceName];
+                var txcounter = netTxCounters[interfaceName];
+                _ = rxcounter.NextValue();
+                _ = txcounter.NextValue();
+                await Task.Delay(3000);
+                return rxcounter.NextValue() > 0 || txcounter.NextValue() > 0;
+            }
+
+            var tasks = from interfaceName in interfaces
+                        select IsInterfaceActiveAsync(interfaceName);
+
+            var results = await Task.WhenAll(tasks);
+            for (int i = 0; i < results.Length; i++)
+            {
+                if (results[i])
                 {
                     interfaceIdx = i;
                     ComBoxInterfaces.SelectedIndex = i;
@@ -92,9 +106,9 @@ namespace WpfUsage
         private void Timer_Tick(object sender, EventArgs e)
         {
             CpuUsage.Content = $"{cpuCounter.NextValue():F2}%";
-            //MemUsage.Content = $"{memCounter.NextValue():F2}% (Available: {memAvailableCounter.NextValue() / GB:F2}GB)";
-            var memAvailable = memAvailableCounter.NextValue();
-            MemUsage.Content = $"{(memTotal - memAvailable) / memTotal:P2} (Available: {memAvailable / GB:F2}GB)";
+
+            var memUsed = memTotal - memAvailableCounter.NextValue();
+            MemUsage.Content = $"{memUsed / memTotal:P2} ({memUsed / GB:F2}GB/{memTotal / GB:F2}GB)";
 
             if (interfaceIdx != -1)
             {
